@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>oai2</name>
+    </assembly>
+    <members>
+        <member name="T:oai2.OAI">
+            <author>
+            Terry Reese
+            Oregon State University Libraries
+            </author>
+            
+            <email>
+            terry.reese@oregonstate.edu
+            </email>
+            
+            <summary>
+            This class represents the first OAI harvester, to my knowledge, written
+            in C#, designed specifically to work within Microsoft's .NET or MONO's .NET
+            frameworks.  The class was inspired by Ed Summer's OAI::Harvester module for
+            PERL. 
+             </summary>
+             
+             <modified>
+             ===========================================================================
+             September 24, 2004:
+             Initial Release
+             ===========================================================================
+             ===========================================================================
+             October 16, 2004
+             Change the way that the Web Request is made.  Many thanks to Lucien van Wouw
+             for letting me know that DSpace IRs require that the web request include
+             a user-agent.  No other OAI repository made this requirement -- but to keep
+             problems from arising, I've modified the code so that a user-agent is 
+             passed.  The default user-agent is now: "OSU .NET OAI Harvester" -- however
+             this is stored as a constant that you may feel free to change.
+             ============================================================================
+             ============================================================================
+             October 17, 2004
+             Modified ListRecords, ListSets and ListMetadataFormat so that the harvester
+             will work with OAI repositories that export data in a single line.  
+             Apparently the xmltextreader would read beyond the node if there wasn't 
+             white space.  This has been corrected.  To make sure that I account for 
+             this later, I've added an example to the example program.
+             Also -- added a count property to the ListRecord class so that its
+             easier to enumerate.
+             =============================================================================
+             November 5, 2004
+             Changes by Frank McCown - Old Dominion University
+             1) Allowed access to request URL when accessing OAI repository.
+             2) Allowed access to raw XML response.
+             3) Fixed access with resumption token in ListRecords().
+             4) Added new ListRecords constructor.
+             5) Made DC metadata extraction more robust.
+             6) Spead up XML parsing in some contexts.
+             =============================================================================
+             
+             ===============================================================================
+             October November 4, 2005
+             Updated the resumptionToken tag.  It wasn't escaping the necessary characters.
+             This is an issue that shows up in how NSF structures their resumption tokens.
+             ===============================================================================
+             </modified>
+             
+             <license>
+             This project has been released under the GNU General Public License.  See: http://www.gnu.org/licenses/gpl.txt
+             </license>
+        </member>
+        <member name="T:oai2.Record">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:oai2.Identifiers">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:oai2.OAI_LIST">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:oai2.OAI_Header">
+            <summary>
+            Represents header of OAI record.
+            </summary>
+        </member>
+        <member name="T:oai2.OAI_About">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:oai2.ListRecord">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:oai2.ListIdentifier">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:oai2.ListSet">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:oai2.ResumptionToken">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:oai2.Error">
+            <summary>
+            
+            </summary>
+        </member>
+    </members>
+</doc>
