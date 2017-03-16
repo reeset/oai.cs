@@ -5,11 +5,12 @@ namespace oai2
 {
 	///<author>
 	///Terry Reese
+    ///The Ohio State University Libraries
 	///Oregon State University Libraries
 	///</author>
 	///
 	///<email>
-	///terry.reese@oregonstate.edu
+	///reeset@gmail.com
 	///</email>
 	///
 	///<summary>
