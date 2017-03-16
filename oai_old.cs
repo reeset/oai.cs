@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace oai2
+namespace oai
 {
 	///<author>
 	///Terry Reese
@@ -43,48 +43,18 @@ namespace oai2
 	/// Also -- added a count property to the ListRecord class so that its
 	/// easier to enumerate.
 	/// =============================================================================
-	/// November 5, 2004
-	/// Changes by Frank McCown - Old Dominion University
-	/// 1) Allowed access to request URL when accessing OAI repository.
-	/// 2) Allowed access to raw XML response.
-	/// 3) Fixed access with resumption token in ListRecords().
-	/// 4) Added new ListRecords constructor.
-	/// 5) Made DC metadata extraction more robust.
-	/// 6) Spead up XML parsing in some contexts.
-	/// =============================================================================
 	/// 
-	/// ===============================================================================
-	/// October November 4, 2005
-	/// Updated the resumptionToken tag.  It wasn't escaping the necessary characters.
-	/// This is an issue that shows up in how NSF structures their resumption tokens.
-	/// ===============================================================================
 	/// </modified>
 	/// 
 	/// <license>
 	/// This project has been released under the GNU General Public License.  See: http://www.gnu.org/licenses/gpl.txt
 	/// </license>
 	public class OAI
-	{		
-		private const string cUserAgent = "C Sharp OAI Harvester";
+	{
+		
+		private const string cUserAgent = "OSU .NET OAI Harvester";
 		private string pbaseURL;
-		private string prequestURL;
-		private string prawXML;
-		private string presponseDate;
-		private int pTimeout = 100000;
 		public Error error = new Error();
-
-        private bool IsNumeric(string s) 
-		{
-			if (s.Length==0) return false;
-			for (int x=0; x<s.Length; x++) 
-			{
-				if (Char.IsNumber(s[x])==false)
-				{
-					return false;
-				}
-			}
-			return true;
-		}
 
 		private string baseURL 
 		{
@@ -97,54 +67,6 @@ namespace oai2
 				return pbaseURL;
 			}
 		}
-
-		public int Timeout 
-		{
-			set 
-			{
-				pTimeout = value;
-			} get 
-			  {
-				  return pTimeout;
-			  }
-		}
-
-		public string RequestURL
-		{
-			set
-			{
-				prequestURL = value;
-			}
-			get
-			{
-				return prequestURL;
-			}
-		}
-
-		public string RawXML
-		{
-			set
-			{
-				prawXML = value;
-			}
-			get
-			{
-				return prawXML;
-			}
-		}
-
-		public string ResponseDate
-		{
-			set
-			{
-				presponseDate = value;
-			}
-			get
-			{
-				return presponseDate;
-			}
-		}
-
 
 		public OAI(string sURI)
 		{
@@ -168,7 +90,6 @@ namespace oai2
 		// Console.WriteLine("Repository: " + objID.repositoryName);
 		// Console.WriteLine("Deleted Records: "  + objID.deletedRecord);
 		//=======================================================================
-
 		public Identify identify() 
 		{
 			System.IO.Stream objStream;
@@ -178,22 +99,16 @@ namespace oai2
 
 			try 
 			{
-				prequestURL = baseURL + "?verb=Identify";
-				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
+				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(baseURL + "?verb=Identify");
 				wr.UserAgent = cUserAgent;
-		
 				System.Net.WebResponse response = wr.GetResponse();
 				objStream = response.GetResponseStream();
-				System.IO.StreamReader reader = new System.IO.StreamReader(objStream);
-				prawXML = reader.ReadToEnd();
-				reader.Close();
-				rd = new System.Xml.XmlTextReader(prawXML, System.Xml.XmlNodeType.Document, null);	
-			}
-			catch (Exception e)
+				rd = new System.Xml.XmlTextReader(objStream);
+			} 
+			catch 
 			{
-                
-				error.errorName = e.ToString();
-				error.errorDescription = e.Message + "\n<br>Unable to connect to " + baseURL; 
+				error.errorName = "badConnection";
+				error.errorDescription = "Unable to connect to " + baseURL;
 				return null;
 			}
 			
@@ -201,11 +116,7 @@ namespace oai2
 			{
 				if (rd.NodeType == System.Xml.XmlNodeType.Element) 
 				{
-					if (rd.Name == "responseDate")
-					{
-						presponseDate = rd.ReadString();
-					}
-                    else if (rd.Name=="Identify") 
+					if (rd.Name=="Identify") 
 					{
 						while ( rd.Read() && rd.NodeType != System.Xml.XmlNodeType.EndElement) 
 						{
@@ -249,9 +160,6 @@ namespace oai2
 					}
 				}
 			}
-
-			rd.Close();
-
 			return objID;
 		}
 
@@ -280,34 +188,31 @@ namespace oai2
 		{
 			System.IO.Stream objStream;
 			ListMetadataFormats objFormat = new ListMetadataFormats();
+			string sURL="";
 			System.Net.HttpWebRequest wr;
 			System.Xml.XmlTextReader rd;
 			
 			if (sidentifier.Length==0) 
 			{
-				prequestURL = baseURL + "?verb=ListMetadataFormats";
+				sURL = baseURL + "?verb=ListMetadataFormats";
 			} 
 			else 
 			{
-				prequestURL = baseURL + "?verb=ListMetadataFormats&identifier=" + sidentifier;
+				sURL = baseURL + "?verb=ListMetadataFormats&identifier=" + sidentifier;
 			}
 
 			try 
 			{
-				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
+				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(sURL);
 				wr.UserAgent = cUserAgent;
 				System.Net.WebResponse response = wr.GetResponse();
 				objStream = response.GetResponseStream();
-				System.IO.StreamReader reader = new System.IO.StreamReader(objStream);
-				prawXML = reader.ReadToEnd();
-				reader.Close();
-				rd = new System.Xml.XmlTextReader(prawXML, System.Xml.XmlNodeType.Document, null);
+				rd = new System.Xml.XmlTextReader(objStream);
 			} 
-			catch (Exception e)
+			catch 
 			{
-                
-				error.errorName = e.ToString();
-				error.errorDescription = e.Message + "\n<br>Unable to connect to " + baseURL; 
+				error.errorName = "badConnection";
+				error.errorDescription = "Unable to connect to " + baseURL;
 				return null;
 			}
 			
@@ -315,14 +220,12 @@ namespace oai2
 			{
 				if (rd.NodeType == System.Xml.XmlNodeType.Element) 
 				{
-					if (rd.Name == "responseDate")
-					{
-						presponseDate = rd.ReadString();
-					}
-					else if (rd.Name=="ListMetadataFormats") 
+					if (rd.Name=="ListMetadataFormats") 
 					{
 						while (rd.Read())  // && rd.NodeType != System.Xml.XmlNodeType.EndElement) 
-						{			
+						{
+
+							
 							switch (rd.Name) 
 							{
 								case "metadataPrefix":
@@ -337,6 +240,7 @@ namespace oai2
 								default:
 									break;
 							}
+
 						} 
 					} 
 					else if (rd.Name=="error") 
@@ -347,8 +251,6 @@ namespace oai2
 					}
 				}
 			}
-
-			rd.Close();
 			return objFormat;
 		}
 
@@ -398,13 +300,14 @@ namespace oai2
 		{
 			object objHandler = new object();
 			objHandler = new OAI_DC();
-			return GetRecord(sidentifier, sPrefix, ref objHandler);
+			return GetRecord(sidentifier, "oai_dc", ref objHandler);
 		}
 
 		public Record GetRecord(string sidentifier, string sPrefix, ref Object objHandler) 
 		{
 			System.IO.Stream objStream;
 			Record objRecord;
+			string sURL="";
 			string tmp = "";
 			System.Net.HttpWebRequest wr;
 			System.Xml.XmlTextReader rd;
@@ -414,7 +317,7 @@ namespace oai2
 				sPrefix = "oai_dc";
 			}
 
-			prequestURL = baseURL + "?verb=GetRecord&metadataPrefix=" + sPrefix + "&identifier=" + sidentifier;
+			sURL = baseURL + "?verb=GetRecord&metadataPrefix=" + sPrefix + "&identifier=" + sidentifier;
 
 			//======================================================
 			// If you wanted to support additional metadata formats, 
@@ -423,20 +326,16 @@ namespace oai2
 
 			try 
 			{
-				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
+				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(sURL);
 				wr.UserAgent = cUserAgent;
 				System.Net.WebResponse response = wr.GetResponse();
 				objStream = response.GetResponseStream();
-				System.IO.StreamReader reader = new System.IO.StreamReader(objStream);
-				prawXML = reader.ReadToEnd();
-				reader.Close();
-				rd = new System.Xml.XmlTextReader(prawXML, System.Xml.XmlNodeType.Document, null);
+				rd = new System.Xml.XmlTextReader(objStream);
 			}
-			catch (Exception e)
+			catch 
 			{
-                
-				error.errorName = e.ToString();
-				error.errorDescription = e.Message + "\n<br>Unable to connect to " + baseURL; 
+				error.errorName = "badConnection";
+				error.errorDescription = "Unable to connect to " + baseURL;
 				return null;
 			}
 			
@@ -444,11 +343,7 @@ namespace oai2
 			{
 				if (rd.NodeType == System.Xml.XmlNodeType.Element) 
 				{
-					if (rd.Name == "responseDate")
-					{
-						presponseDate = rd.ReadString();
-					}
-					else if (rd.Name=="GetRecord") 
+					if (rd.Name=="GetRecord") 
 					{ 
 						do
 						{
@@ -511,14 +406,6 @@ namespace oai2
 			objHandler = new OAI_DC();
 			return ListRecords("", "", "", "", objToken, ref objHandler);
 		}
-		// McCown
-		public ListRecord ListRecords(string sPrefix, string sset, string sfrom, string suntil, ResumptionToken objToken) 
-		{
-			object objHandler = new object();
-			objHandler = new OAI_DC();
-			return ListRecords(sPrefix, sset, sfrom, suntil, objToken, ref objHandler);
-		}
-
 		public ListRecord ListRecords(string sPrefix, 
 			string sset, 
 			string sfrom, 
@@ -526,15 +413,14 @@ namespace oai2
 			ResumptionToken objToken, 
 			ref Object objHandler) 
 		{
-            int fail = 0;
-            Restart:
 			System.IO.Stream objStream;
 			ListRecord objList = new ListRecord();
 			Record objRecord;
 			ResumptionToken myToken;
+			string sURL="";
 			string tmp = "";
-			System.Net.HttpWebRequest wr = null;
-            System.Xml.XmlTextReader rd = null;
+			System.Net.HttpWebRequest wr;
+			System.Xml.XmlTextReader rd;
 
 			if (sPrefix.Length==0) 
 			{
@@ -556,104 +442,40 @@ namespace oai2
 					suntil = "&until=" + suntil;
 				}
 
-				prequestURL = baseURL + "?verb=ListRecords&metadataPrefix=" + sPrefix + sset + sfrom + suntil;
+				sURL = baseURL + "?verb=ListRecords&metadataPrefix=" + sPrefix + sset + sfrom + suntil;
 
 			} 
 			else 
 			{
-				//This is where we handle the resumptionToken - McCown
-				prequestURL = baseURL + "?verb=ListRecords&resumptionToken=" + objToken.resumptionToken;
+				//This is where we handle the resumptionToken
 			}
 			//======================================================
 			// If you wanted to support additional metadata formats, 
 			// you would just need to have additional handlers.
 			//======================================================
-            try
-            {
-                //System.Windows.Forms.MessageBox.Show(prequestURL);
-                wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
-                //wr.Headers.Add("Host:" + System.Net.Dns.GetHostName());
-                wr.UserAgent = cUserAgent + DateTime.Now.ToString();
-                wr.Accept = "application/xml;*/*";
-
-                if (this.Timeout <= 0) { this.Timeout = 100000; }
-                wr.Timeout = this.Timeout;
-
-                System.Net.WebResponse response = wr.GetResponse();
-                objStream = response.GetResponseStream();
-                System.IO.StreamReader reader = new System.IO.StreamReader(objStream);
-                prawXML = reader.ReadToEnd();
-                //System.Windows.Forms.MessageBox.Show(prawXML);
-                reader.Close();
-                response.Close();
-                rd = new System.Xml.XmlTextReader(prawXML, System.Xml.XmlNodeType.Document, null);
-                rd.Normalization = true;
-            }
-            catch (System.Net.WebException ee)
-            {
-                int sleepval = 3000;
-                
-                fail++;
-                //System.Windows.Forms.MessageBox.Show(tt.ToString());
-                //System.Windows.Forms.MessageBox.Show(ee.ToString());
-                if (ee.Status == System.Net.WebExceptionStatus.ProtocolError)
-                {
-                    var response = ee.Response as System.Net.HttpWebResponse;
-                    if (response != null)
-                    {
-                        if ((int)response.StatusCode == 503)
-                        {
-                            string retryafter = response.Headers["Retry-After"];
-                            if (retryafter != null && IsNumeric(retryafter) == true)
-                            {
-                                {
-                                    sleepval = System.Convert.ToInt32(retryafter) * 1000;
-                                }
-                            }
-                        }
-                    }
-
-                    if (fail <= 4)
-                    {
-                        //System.Windows.Forms.MessageBox.Show(sleepval.ToString());
-                        System.Threading.Thread.Sleep(sleepval);
-                        goto Restart;
-                    }
-                    else
-                    {
-                        wr.Abort();
-                        error.errorName = ee.ToString();
-                        error.errorDescription = ee.Message + "\n<br>Unable to connect to " + baseURL;
-                        return null;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-               // System.Windows.Forms.MessageBox.Show("2");
-                if (wr != null)
-                {
-                    wr.Abort();
-                }
-                error.errorName = e.ToString();
-                error.errorDescription = e.Message + "\n<br>Unable to connect to " + baseURL;
-                return null;
-            }
-
-            fail = 0;
+			try 
+			{
+				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(sURL);
+				wr.UserAgent = cUserAgent;
+				System.Net.WebResponse response = wr.GetResponse();
+				objStream = response.GetResponseStream();
+				rd = new System.Xml.XmlTextReader(objStream);
+			}
+			catch 
+			{
+				error.errorName = "badConnection";
+				error.errorDescription = "Unable to connect to " + baseURL;
+				return null;
+			}
+			
 			while (rd.Read()) 
 			{
 				if (rd.NodeType == System.Xml.XmlNodeType.Element) 
 				{
-					if (rd.Name == "responseDate")
-					{
-						presponseDate = rd.ReadString();
-					}
-					else if (rd.Name=="ListRecords") 
+					if (rd.Name=="ListRecords") 
 					{ 
 						do 
 						{
-                            
 							if (rd.Name=="record") 
 							{
 								tmp = ParseOAIContainer(ref rd, "record");
@@ -667,17 +489,7 @@ namespace oai2
 								myToken = new ResumptionToken(tmp);
 								objList.token = myToken;
 							}
-                            //else if (rd.Name.ToLower() == "OAI-PMH".ToLower())
-                            //{
-                            //    break;
-                            //}
-                            else if (rd.EOF == true)
-                            {
-                                error.errorName = "Empty ListRecords Request";
-                                error.errorDescription = "No data was returned in the ListRecords Element.  This is likely an error.";
-                                return null;
-                            }
-                            else rd.Read(); // Added the Read() and will never occur with the ReadInnerXml()
+							else rd.Read(); // Added the Read() and will never occur with the ReadInnerXml()
 
 						} while (rd.Name!="ListRecords"); // loop
 					} 
@@ -690,9 +502,7 @@ namespace oai2
 				}
 			}
 
-            
-            return objList;
-            
+			return objList;
 
 			
 		}
@@ -734,6 +544,7 @@ namespace oai2
 			ListIdentifier objList = new ListIdentifier();
 			Identifiers objRecord;
 			ResumptionToken myToken;
+			string sURL="";
 			string tmp = "";
 			System.Net.HttpWebRequest wr;
 			System.Xml.XmlTextReader rd;
@@ -758,12 +569,12 @@ namespace oai2
 					suntil = "&until=" + suntil;
 				}
 
-				prequestURL = baseURL + "?verb=ListIdentifiers&metadataPrefix=" + sPrefix + sset + sfrom + suntil;
+				sURL = baseURL + "?verb=ListIdentifiers&metadataPrefix=" + sPrefix + sset + sfrom + suntil;
 
 			} 
 			else 
 			{
-				prequestURL = baseURL + "?verb=ListIdentifiers&resumptionToken=" + objToken.resumptionToken;
+				sURL = baseURL + "?verb=ListIdentifiers&resumptionToken=" + objToken.resumptionToken;
 				//This is where we handle the resumptionToken
 			}
 			//======================================================
@@ -773,20 +584,16 @@ namespace oai2
 			//Console.Write(sURL);
 			try 
 			{
-				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
+				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(sURL);
 				wr.UserAgent = cUserAgent;
 				System.Net.WebResponse response = wr.GetResponse();
 				objStream = response.GetResponseStream();
-				System.IO.StreamReader reader = new System.IO.StreamReader(objStream);
-				prawXML = reader.ReadToEnd();
-				reader.Close();
-				rd = new System.Xml.XmlTextReader(prawXML, System.Xml.XmlNodeType.Document, null);
+				rd = new System.Xml.XmlTextReader(objStream);
 			}
-			catch (Exception e)
+			catch 
 			{
-               
 				error.errorName = "badConnection";
-				error.errorDescription = e.Message + "<br>Unable to connect to " + baseURL;
+				error.errorDescription = "Unable to connect to " + baseURL;
 				return null;
 			}
 			
@@ -794,11 +601,7 @@ namespace oai2
 			{
 				if (rd.NodeType == System.Xml.XmlNodeType.Element) 
 				{
-					if (rd.Name == "responseDate")
-					{
-						presponseDate = rd.ReadString();
-					}
-					else if (rd.Name=="ListIdentifiers") 
+					if (rd.Name=="ListIdentifiers") 
 					{ 
 						do
 						{
@@ -817,22 +620,24 @@ namespace oai2
 								myToken = new ResumptionToken(tmp);
 								objList.token = myToken;
 							}
+
 							else rd.Read(); // Added the Read() and will never occur with the ReadInnerXml()
 
 						} while (rd.Name!="ListIdentifiers"); // loop
+
 					} 
 					else if (rd.Name=="error") 
 					{
 						error.errorName = rd.GetAttribute("code");
 						error.errorDescription = rd.ReadString();
-						rd.Close();
 						return null;
 					}
 				}
 			}
 
-			rd.Close();
-			return objList;			
+			return objList;
+
+			
 		}
 
 		//=========================================================
@@ -846,46 +651,47 @@ namespace oai2
 			objHandler = new OAI_DC();
 			return ListSets(objToken, ref objHandler);
 		}
-
 		public ListSet ListSets(ResumptionToken objToken, ref Object objHandler) 
 		{
 			System.IO.Stream objStream;
 			OAI_LIST objRecord;
 			ListSet objList = new ListSet();
 			ResumptionToken myToken;
+			string sURL="";
 			string tmp = "";
 			System.Net.HttpWebRequest wr;
 			System.Xml.XmlTextReader rd;
+
 			
 			if (objToken==null) 
-			{			
-				prequestURL = baseURL + "?verb=ListSets";
+			{
+			
+				sURL = baseURL + "?verb=ListSets";
+
 			} 
 			else 
 			{
-				prequestURL = baseURL + "?verb=ListSets&resumptionToken=" + objToken.resumptionToken;
+				sURL = baseURL + "?verb=ListSets&resumptionToken=" + objToken.resumptionToken;
 				//This is where we handle the resumptionToken
 			}
 			//======================================================
 			// If you wanted to support additional metadata formats, 
 			// you would just need to have additional handlers.
 			//======================================================
-
+			//Console.Write(sURL);
 			try 
 			{
-				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
+				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(sURL);
 				wr.UserAgent = cUserAgent;
 				System.Net.WebResponse response = wr.GetResponse();
 				objStream = response.GetResponseStream();
-				System.IO.StreamReader reader = new System.IO.StreamReader(objStream);
-				prawXML = reader.ReadToEnd();
-				reader.Close();
-				rd = new System.Xml.XmlTextReader(prawXML, System.Xml.XmlNodeType.Document, null);			
+				rd = new System.Xml.XmlTextReader(objStream);
+				
 			}
-			catch (Exception e)
+			catch 
 			{
-				error.errorName = e.ToString();
-				error.errorDescription = e.Message + "\n<br>Unable to connect to " + baseURL; 
+				error.errorName = "badConnection";
+				error.errorDescription = "Unable to connect to " + baseURL;
 				return null;
 			}
 			
@@ -893,11 +699,7 @@ namespace oai2
 			{
 				if (rd.NodeType == System.Xml.XmlNodeType.Element) 
 				{
-					if (rd.Name == "responseDate")
-					{
-						presponseDate = rd.ReadString();
-					}
-					else if (rd.Name=="ListSets") 
+					if (rd.Name=="ListSets") 
 					{ 
 						//while (rd.Read()) 
 						do
@@ -917,6 +719,9 @@ namespace oai2
 							else rd.Read(); // Added the Read() and will never occur with the ReadInnerXml()
 
 					   } while (rd.Name!="ListSets"); // loop
+
+
+							//}
 					} 
 					else if (rd.Name == "error") 
 					{
@@ -927,8 +732,9 @@ namespace oai2
 				}
 			}
 
-			rd.Close();
-			return objList;			
+			return objList;
+
+			
 		}
 
 
@@ -1124,9 +930,6 @@ namespace oai2
 
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public class Record 
 	{
 		public Object metadata;
@@ -1164,11 +967,11 @@ namespace oai2
             BindingFlags.Instance | BindingFlags.CreateInstance, null,  null, tobject);
 			about = new OAI_About(sXML, ref objHandler);
 		}
+
+
+
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public class Identifiers 
 	{
 		public OAI_Header header;
@@ -1182,11 +985,11 @@ namespace oai2
 		{
 			header = new OAI_Header(sXML);
 		}
+
+
+
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public class OAI_LIST  
 	{
 		public string setSpec = "";
@@ -1419,74 +1222,65 @@ namespace oai2
 		public OAI_DC(string sXML) 
 		{
 			System.Xml.XmlTextReader reader = new System.Xml.XmlTextReader(sXML, System.Xml.XmlNodeType.Element, null);
-			while (reader.Read() && reader.Name != "oai_dc:dc" && reader.Name != "oaidc:dc");  // Keep reading until finding oia_dc
-			
-			string oiaDCxml = reader.ReadInnerXml();
-
-			reader = new System.Xml.XmlTextReader(oiaDCxml, System.Xml.XmlNodeType.Element, null);
-
 			while (reader.Read()) 
 			{
-				string metadata = reader.Name.Replace("dc:", "");  // Remove optional dc:
-				switch (metadata) 
+				switch (reader.Name) 
 				{
-					case "title":
+					case "dc:title":
 						title.Add(reader.ReadString());
 						break;
-					case "creator":
+					case "dc:creator":
 						creator.Add(reader.ReadString());
 						break;
-					case "subject":
+					case "dc:subject":
 						subject.Add(reader.ReadString());
 						break;
-					case "description":
+					case "dc:description":
 						description.Add(reader.ReadString());
 						break;
-					case "publisher":
+					case "dc:publisher":
 						publisher.Add(reader.ReadString());
 						break;
-					case "contributor":
+					case "dc:contributor":
 						contributor.Add(reader.ReadString());
 						break;
-					case "date":
+					case "dc:date":
 						date.Add(reader.ReadString());
 						break;
-					case "type":
+					case "dc:type":
 						type.Add(reader.ReadString());
 						break;
-					case "format":
+					case "dc:format":
 						format.Add(reader.ReadString());
 						break;
-					case "identifier":
+					case "dc:identifier":
 						identifier.Add(reader.ReadString());
 						break;
-					case "source":
+					case "dc:source":
 						source.Add(reader.ReadString());
 						break;
-					case "language":
+					case "dc:language":
 						language.Add(reader.ReadString());
 						break;
-					case "relation":
+					case "dc:relation":
 						relation.Add(reader.ReadString());
 						break;
-					case "coverage":
+					case "dc:coverage":
 						coverage.Add(reader.ReadString());
 						break;
-					case "rights":
+					case "dc:rights":
 						rights.Add(reader.ReadString());
 						break;
 					default:
 						break;
 				}
-			} // end while 
+			}
+
 		}
 
-	}  // end class
 
+	}
 
-	/// <summary>
-	/// Represents header of OAI record.
-	/// </summary>
 	public class OAI_Header 
 	{
 		private string pidentifier="";
@@ -1540,28 +1334,37 @@ namespace oai2
 
 		public OAI_Header(string sXML) 
 		{
+			
 			System.Xml.XmlTextReader reader = new System.Xml.XmlTextReader(sXML, System.Xml.XmlNodeType.Element, null);
-			while (reader.Read() && reader.Name != "header");  // Keep searching until finding header
-
-			if (reader.Name == "header") 
+			while (reader.Read()) 
 			{
-				status = reader.GetAttribute("status");
-
-				while (reader.Read()) 
-				{						
-					switch (reader.Name) 
-					{						
-						case "identifier":
-							if (identifier.Length == 0)   // In case this is the DC indentifier
+				//switch (reader.Name) 
+				//{
+				if (reader.Name=="header") 
+				{
+					status = reader.GetAttribute("status");
+					while (reader.Read()) 
+					{
+						switch (reader.Name) 
+						{
+								//case "header":
+								//	//reader.MoveToAttribute("status");
+								//	status = reader.ReadString();
+								//	break;
+							case "identifier":
 								identifier = reader.ReadString();
-							break;
-						case "datestamp":
-							datestamp = reader.ReadString();
-							break;
-						case "setSpec":
-							setSpec.Add(reader.ReadString());
-							break;
+								break;
+							case "datestamp":
+								datestamp = reader.ReadString();
+								break;
+							case "setSpec":
+								setSpec.Add(reader.ReadString());
+								break;
+							default:
+								break;
+						}
 					}
+					//}
 				}
 			}
 						
@@ -1569,9 +1372,6 @@ namespace oai2
 
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public class OAI_About 
 	{
 		public Object objDC;
@@ -1586,10 +1386,6 @@ namespace oai2
 				BindingFlags.Instance | BindingFlags.CreateInstance, null,  null, tobject);
 		}
 	}
-
-	/// <summary>
-	/// 
-	/// </summary>
 	public class ListRecord 
 	{
 		private System.Collections.ArrayList pRecord = new System.Collections.ArrayList();
@@ -1654,13 +1450,10 @@ namespace oai2
 		}
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public class ListIdentifier 
 	{
 		private System.Collections.ArrayList pRecord = new System.Collections.ArrayList();
-		private ResumptionToken pToken = null;  // new ResumptionToken();   McCown
+		private ResumptionToken pToken = new ResumptionToken();
 
 		private static int pindex=0;
 		public System.Collections.ArrayList record
@@ -1720,13 +1513,10 @@ namespace oai2
 		}
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public class ListSet 
 	{
 		private System.Collections.ArrayList pOAI_LIST = new System.Collections.ArrayList();
-		private ResumptionToken pToken = null; //new ResumptionToken();  McCown
+		private ResumptionToken pToken = new ResumptionToken();
 		//private static int pindex=0;
 		public System.Collections.ArrayList listset 
 		{
@@ -1751,30 +1541,12 @@ namespace oai2
 
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public class ResumptionToken
 	{
 		private string pexpirationDate=null;
 		private string pcompleteListSize=null;
 		private string pcursor=null;
 		private string presumptionToken=null;
-
-		internal string EscapeSpecial(string s) 
-		{
-			s = s.Replace("%", "%25");
-			s = s.Replace("/", "%2F");
-			s = s.Replace("?", "%3F");
-			s = s.Replace("#", "%23");
-			s = s.Replace("=", "%3D");
-			s = s.Replace("&", "%26");
-			s = s.Replace(":", "%3A");
-			s = s.Replace(";", "%3B");
-			s = s.Replace(" ", "%20");
-			s = s.Replace("+", "%2B");
-			return s;
-		}
 
 		public string expirationDate 
 		{
@@ -1813,7 +1585,7 @@ namespace oai2
 		{
 			set 
 			{
-				presumptionToken = EscapeSpecial(value);
+				presumptionToken = value;
 			} get 
 			  {
 				  return presumptionToken;
@@ -1832,48 +1604,17 @@ namespace oai2
 			{
 				if (reader.Name == "resumptionToken") 
 				{
-                    try
-                    {
-                        expirationDate = reader.GetAttribute("expirationDate");
-                    }
-                    catch
-                    {
-                        expirationDate = null;
-                    }
-
-                    try
-                    {
-                        completeListSize = reader.GetAttribute("completeListSize");
-                    }
-                    catch
-                    {
-                        completeListSize = null;
-                    }
-                    try
-                    {
-                        cursor = reader.GetAttribute("cursor");
-                    }
-                    catch
-                    {
-                        cursor = null;
-                    }
-
-                    try
-                    {
-                        resumptionToken = reader.ReadString();
-                    }
-                    catch
-                    {
-                        resumptionToken = null;
-                    }
+					expirationDate = reader.GetAttribute("expirationDate");
+					completeListSize = reader.GetAttribute("completeListSize");
+					cursor = reader.GetAttribute("cursor");
+					resumptionToken = reader.ReadString();
 				}
-			}		
+			}
+						
 		}
+
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public class Error 
 	{
 		private string perrorName = null;
