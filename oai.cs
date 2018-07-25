@@ -66,12 +66,12 @@ namespace oai2
 	/// </license>
 	public class OAI
 	{		
-		private const string cUserAgent = "C Sharp OAI Harvester";
+		private string cUserAgent = "MarcEdit 7 (OAI Harvester)";
 		private string pbaseURL;
 		private string prequestURL;
 		private string prawXML;
 		private string presponseDate;
-		private int pTimeout = 100000;
+		private int pTimeout = 150000;
 		public Error error = new Error();
 
         private bool IsNumeric(string s) 
@@ -109,6 +109,18 @@ namespace oai2
 				  return pTimeout;
 			  }
 		}
+
+        public string UserAgent
+        {
+            set
+            {
+                cUserAgent = value;
+            }
+            get
+            {
+                return cUserAgent;
+            }
+        }
 
 		public string RequestURL
 		{
@@ -424,14 +436,25 @@ namespace oai2
 
 			try 
 			{
-				wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
+
+                
+
+
+                wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
 				wr.UserAgent = cUserAgent;
-				System.Net.WebResponse response = wr.GetResponse();
+                wr.Accept = "application/xml;*/*";
+
+                if (this.Timeout <= 0) { this.Timeout = 100000; }
+                wr.Timeout = this.Timeout;
+
+
+                System.Net.WebResponse response = wr.GetResponse();
 				objStream = response.GetResponseStream();
 				System.IO.StreamReader reader = new System.IO.StreamReader(objStream);
 				prawXML = reader.ReadToEnd();
 				reader.Close();
 				rd = new System.Xml.XmlTextReader(prawXML, System.Xml.XmlNodeType.Document, null);
+                rd.Normalization = true;
 			}
 			catch (Exception e)
 			{
@@ -564,6 +587,7 @@ namespace oai2
 			{
 				//This is where we handle the resumptionToken - McCown
 				prequestURL = baseURL + "?verb=ListRecords&resumptionToken=" + objToken.resumptionToken;
+                //System.Windows.Forms.MessageBox.Show(prequestURL);
 			}
 			//======================================================
 			// If you wanted to support additional metadata formats, 
@@ -574,7 +598,7 @@ namespace oai2
                 //System.Windows.Forms.MessageBox.Show(prequestURL);
                 wr = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(prequestURL);
                 //wr.Headers.Add("Host:" + System.Net.Dns.GetHostName());
-                wr.UserAgent = cUserAgent + DateTime.Now.ToString();
+                wr.UserAgent = cUserAgent; // + DateTime.Now.ToString();
                 wr.Accept = "application/xml;*/*";
 
                 if (this.Timeout <= 0) { this.Timeout = 100000; }
@@ -1761,6 +1785,7 @@ namespace oai2
 		private string pcompleteListSize=null;
 		private string pcursor=null;
 		private string presumptionToken=null;
+        private bool pisEscaped = false;
 
 		internal string EscapeSpecial(string s) 
 		{
@@ -1777,6 +1802,16 @@ namespace oai2
 			return s;
 		}
 
+        public bool IsEscaped
+        {
+            set
+            { pisEscaped = value;
+            }
+            get
+            {
+                return pisEscaped;
+            }
+        }
 		public string expirationDate 
 		{
 			set 
@@ -1814,7 +1849,13 @@ namespace oai2
 		{
 			set 
 			{
-				presumptionToken = EscapeSpecial(value);
+                if (IsEscaped == false)
+                {
+                    presumptionToken = value;//EscapeSpecial(value);
+                } else
+                {
+                    presumptionToken = EscapeSpecial(value);
+                }
 			} get 
 			  {
 				  return presumptionToken;
